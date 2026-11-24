@@ -34,11 +34,13 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-flutter-3.50.0-${{ hashFiles('pubspec.yaml') }}
       - name: Generate platform runners
-        run: flutter create --no-pub --platforms=android,windows --org dev.vardanmittal --project-name stride .
+        run: |
+          flutter create --no-pub --platforms=android,windows --org dev.vardanmittal --project-name stride .
+          rm -f test/widget_test.dart
       - name: Get packages
         run: flutter pub get
       - name: Format check
-        run: dart format --output=show --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed lib test
       - name: Analyze
         run: flutter analyze
       - name: Test
