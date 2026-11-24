@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.9.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify required signing secrets
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: test -n "$KEYSTORE" -a -n "$STORE_PASSWORD" -a -n "$KEY_ALIAS" -a -n "$KEY_PASSWORD"
+      - name: Install Flutter 3.50.0
+        run: |
+          git clone --depth 1 --branch 3.50.0 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Generate platform runners and packages
+        run: |
+          flutter create --no-pub --platforms=android,windows --org dev.vardanmittal --project-name stride .
+          flutter pub get
+      - name: Build release APK
+        env:
+          BUILD_NAME: ${{ github.ref_name }}
+        run: |
+          flutter build apk --release --build-name="${BUILD_NAME#v}" --build-number="${{ github.run_number }}" --dart-define=SUPABASE_URL="${{ vars.SUPABASE_URL }}" --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v4.3.4
+        with:
+          name: stride-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 1
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Flutter 3.50.0
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch 3.50.0 https://github.com/flutter/flutter.git "$env:RUNNER_TEMP/flutter"
+          "$env:RUNNER_TEMP/flutter/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Build Windows desktop bundle
+        shell: pwsh
+        run: |
+          flutter create --no-pub --platforms=android,windows --org dev.vardanmittal --project-name stride .
+          flutter pub get
+          flutter build windows --release --dart-define=SUPABASE_URL="${{ vars.SUPABASE_URL }}" --dart-define=SUPABASE_ANON_KEY="${{ secrets.SUPABASE_ANON_KEY }}"
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath stride-windows.zip
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v4.3.4
+        with:
+          name: stride-windows
+          path: stride-windows.zip
+          retention-days: 1
+  publish:
+    needs: [android, windows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          path: artifacts
+      - name: Create checksums and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd artifacts
+          sha256sum stride-release-apk/app-release.apk stride-windows/stride-windows.zip > SHA256SUMS
+          gh release create "${{ github.ref_name }}" stride-release-apk/app-release.apk stride-windows/stride-windows.zip SHA256SUMS --generate-notes --title "Stride ${{ github.ref_name }}"
