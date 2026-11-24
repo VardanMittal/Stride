@@ -28,7 +28,10 @@ class StrideApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Stride',
-        theme: ThemeData(colorSchemeSeed: const Color(0xff285943), useMaterial3: true),
+        theme: ThemeData(
+          colorSchemeSeed: const Color(0xff285943),
+          useMaterial3: true,
+        ),
         darkTheme: ThemeData(
           colorSchemeSeed: const Color(0xff285943),
           brightness: Brightness.dark,
@@ -38,11 +41,22 @@ class StrideApp extends StatelessWidget {
           appBar: AppBar(title: const Text('Stride')),
           body: Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.directions_run, size: 64, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.directions_run,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 16),
-              const Text('Stride', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700)),
+              const Text(
+                'Stride',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 8),
-              Text(isSupabaseConfigured ? 'Supabase configuration loaded.' : 'Supabase is not configured.'),
+              Text(
+                isSupabaseConfigured
+                    ? 'Supabase configuration loaded.'
+                    : 'Supabase is not configured.',
+              ),
             ]),
           ),
         ),
@@ -55,7 +69,8 @@ class ConfigurationMissingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const _ConfigurationApp(
         title: 'Stride needs configuration',
-        message: 'Launch Stride with SUPABASE_URL and SUPABASE_ANON_KEY using --dart-define.',
+        message:
+            'Launch Stride with SUPABASE_URL and SUPABASE_ANON_KEY using --dart-define.',
       );
 }
 
@@ -66,7 +81,8 @@ class ConfigurationErrorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _ConfigurationApp(
         title: 'Stride could not start',
-        message: 'Supabase could not be initialized. Check the launch configuration.\n$error',
+        message:
+            'Supabase could not be initialized. Check the launch configuration.\n$error',
       );
 }
 
@@ -78,7 +94,10 @@ class _ConfigurationApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Stride',
-        theme: ThemeData(useMaterial3: true, colorSchemeSeed: const Color(0xff285943)),
+        theme: ThemeData(
+          useMaterial3: true,
+          colorSchemeSeed: const Color(0xff285943),
+        ),
         home: Scaffold(
           body: Center(
             child: Padding(
@@ -86,7 +105,13 @@ class _ConfigurationApp extends StatelessWidget {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.settings_alert_outlined, size: 48),
                 const SizedBox(height: 16),
-                Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(message, textAlign: TextAlign.center),
               ]),
